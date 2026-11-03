@@ -1,0 +1,141 @@
+"""Fine-tune Whisper large-v3-turbo on the Bangor segments on a Modal A100 (docs/FINETUNE_PLAN.md).
+
+Stages are separate functions so each has its own hard timeout, which bounds its cost:
+
+    uv run --extra train modal run --detach scripts/modal_finetune.py::trial --run-id s1
+    uv run --extra train modal run --detach scripts/modal_finetune.py::full --run-id s2
+
+Launch through scripts/modal_watchdog.py, which stops the app at a wall-clock deadline.
+Data comes from the `lit-sp-en-train` volume (/bangor: manifest, FLAC, segment
+languages). Dev audio never goes to Modal. Each run writes /runs/<stage>-<run id>/
+(ATTEMPT marker, report.json; weights for `full` only) and prints one `REPORT {...}`
+line with aggregates only. A second attempt of the same run id (Modal restarts
+preempted or crashed containers even with retries=0) prints `GUARD` and returns
+before loading anything.
+"""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+import modal
+
+app = modal.App("lit-sp-en-finetune")
+volume = modal.Volume.from_name("lit-sp-en-train")
+image = (
+    modal.Image.debian_slim(python_version="3.12")
+    .pip_install("torch==2.11.0", "transformers==4.57.6", "accelerate==1.12.0",
+                 "soundfile==0.14.0", "numpy==2.3.5", "ctranslate2==4.8.2",
+                 "huggingface-hub==0.36.2", "tokenizers==0.22.2")
+    .add_local_python_source("lit_sp_en")
+)
+GPU = "A100-80GB"
+VOLUME = "/vol"
+
+
+DATASETS = {"bangor": "bangor", "g7": "bangor_g7"}  # volume directory per dataset name
+
+
+def _run(stage: str, run_id: str, dataset: str = "bangor", **overrides) -> dict:
+    from lit_sp_en.finetune import claim_attempt, run_directory
+
+    if dataset not in DATASETS:
+        raise ValueError(f"unknown dataset {dataset!r}; expected one of {sorted(DATASETS)}")
+    out = run_directory(Path(VOLUME) / "runs", stage, run_id)
+    volume.reload()
+    if not claim_attempt(out):
+        print(f"GUARD {out.name}: an earlier attempt exists; not training", flush=True)
+        return {"guard": "refused", "run": out.name}
+    volume.commit()
+    try:
+        return _train_and_report(stage, out, DATASETS[dataset], **overrides)
+    except Exception as exc:
+        # Messages and tracebacks from data loading can name a segment; the log is read
+        # off-machine, so only the exception type is printed and the chain is dropped.
+        print(f"FAILED {out.name}: {type(exc).__name__}", flush=True)
+        raise RuntimeError(f"{stage} failed: {type(exc).__name__}") from None
+
+
+def _train_and_report(stage: str, out: Path, data_dir: str, **overrides) -> dict:
+    from lit_sp_en.finetune import FinetuneConfig, convert_to_ctranslate2, train
+
+    cfg = FinetuneConfig(data_dir=f"{VOLUME}/{data_dir}",
+                         languages_file=f"{VOLUME}/{data_dir}/segment_languages.json",
+                         output_dir=str(out), **overrides)
+    report = train(cfg)
+    if stage == "full":
+        convert_to_ctranslate2(report["final_dir"], str(out / "ct2"), "float16")
+        report["ct2_dir"] = str(out / "ct2")
+    (out / "report.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    volume.commit()
+    compact = {k: v for k, v in report.items()
+               if k not in ("config", "loss_curve", "training_args")}
+    compact["loss_first_last"] = [report["loss_curve"][:1], report["loss_curve"][-1:]]
+    print("REPORT " + json.dumps(compact), flush=True)
+    return report
+
+
+# (request, limit) tuples make CPU and memory hard limits, not just requests.
+CPU = (8.0, 8.0)
+MEMORY = (65536, 65536)
+STARTUP_TIMEOUT = 10 * 60
+EXPECTED_ITEMS = 7200
+
+
+# S1: 10 minutes of training (plus load) under a 20-minute execution timeout; no weights kept.
+@app.function(image=image, gpu=GPU, cpu=CPU, memory=MEMORY, timeout=20 * 60,
+              startup_timeout=STARTUP_TIMEOUT, volumes={VOLUME: volume}, retries=0)
+def trial(run_id: str, dataset: str = "bangor", expected_items: int = EXPECTED_ITEMS) -> dict:
+    return _run("trial", run_id, dataset=dataset, epochs=2.0, max_train_seconds=600.0,
+                expected_items=expected_items, save_final=False)
+
+
+# S2: the full 2-epoch run, only after S1's throughput projects it under the cap.
+@app.function(image=image, gpu=GPU, cpu=CPU, memory=MEMORY, timeout=30 * 60,
+              startup_timeout=STARTUP_TIMEOUT, volumes={VOLUME: volume}, retries=0)
+def convert(run_id: str, stage: str = "full") -> dict:
+    """Convert an already-trained run's `final/` to CTranslate2, without retraining.
+
+    `full-g7sd2` trained for 1,691 s, saved `final/`, and was then PREEMPTED mid-conversion
+    ("Container terminated due to preemption"). Modal restarted it and the ATTEMPT guard
+    correctly refused to train again -- but that left the weights on the volume with no `ct2/`
+    and no report, and the only other recovery was a 28-minute retrain under a new run id.
+    A preemption after training should not cost the training.
+    """
+    import json
+    from pathlib import Path
+
+    from lit_sp_en.finetune import convert_to_ctranslate2
+
+    out = Path(VOLUME) / "runs" / f"{stage}-{run_id}"
+    volume.reload()
+    final = out / "final"
+    if not final.is_dir():
+        raise ValueError("no final/ to convert")
+    if (out / "ct2").is_dir():
+        print(f"GUARD {out.name}: ct2/ exists; not converting", flush=True)
+        return {"guard": "refused", "run": out.name}
+    try:
+        convert_to_ctranslate2(str(final), str(out / "ct2"), "float16")
+    except Exception as exc:
+        print(f"FAILED {out.name}: {type(exc).__name__}", flush=True)
+        raise RuntimeError(f"convert failed: {type(exc).__name__}") from None
+    report = {"run": out.name, "converted": True, "ct2_dir": str(out / "ct2")}
+    (out / "report.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    volume.commit()
+    print("REPORT " + json.dumps(report), flush=True)
+    return report
+
+
+@app.function(image=image, gpu=GPU, cpu=CPU, memory=MEMORY, timeout=75 * 60,
+              startup_timeout=STARTUP_TIMEOUT, volumes={VOLUME: volume}, retries=0)
+def full(run_id: str, dataset: str = "bangor", expected_items: int = EXPECTED_ITEMS,
+         upsample_ids_file: str = "", upsample_factor: int = 1) -> dict:
+    # `upsample_*` implements docs/METHODS.md Round 10: repeat the switch-bearing segments,
+    # because 54% of the G7 rows carry no code-switch while dev is code-switched throughout.
+    # `expected_items` counts rows AFTER upsampling, so it must be raised in step or left at 0.
+    return _run("full", run_id, dataset=dataset, epochs=2.0, expected_items=expected_items,
+                upsample_ids_file=(f"{VOLUME}/{DATASETS[dataset]}/{upsample_ids_file}"
+                                   if upsample_ids_file else ""),
+                upsample_factor=upsample_factor)

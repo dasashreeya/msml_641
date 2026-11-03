@@ -1,0 +1,70 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "msml641-codeswitch-asr"
+version = "0.1.0"
+description = "MSML641 term project: ASR for Spanish-English code-switched conversation"
+requires-python = ">=3.12,<3.13"
+license = "MPL-2.0"
+dependencies = []
+
+[project.optional-dependencies]
+audit = [
+  "numpy>=2.1",
+  "mutagen>=1.47",
+  # Imported by vendor/runtime_score.py, the official scorer.
+  "jiwer",
+  "pandas",
+  "typer",
+]
+hf = [
+  "huggingface-hub>=1.31",
+]
+dev = [
+  "pytest>=8.3",
+  "ruff>=0.12",
+]
+prep = [
+  "soundfile>=0.14.0",
+]
+baseline = [
+  # Pinned to the official runtime (drivendataorg/lost-in-transcription-runtime).
+  "ctranslate2==4.8.2",
+  "faster-whisper==1.2.1",
+]
+qwen = [
+  # Official runtime uv.lock pins. transformers 4.57.6 requires huggingface-hub<1, which
+  # conflicts with the hf extra, so install into a separate environment:
+  #   UV_PROJECT_ENVIRONMENT=.venv-qwen uv sync --extra qwen --extra audit
+  "qwen-asr==0.0.6",
+  "transformers==4.57.6",
+  "torch==2.11.0",
+  "huggingface-hub==0.36.2",
+  "tokenizers==0.22.2",
+  "accelerate==1.12.0",
+]
+train = [
+  "modal==1.2.6",
+]
+
+[tool.uv]
+conflicts = [
+  [{ extra = "hf" }, { extra = "qwen" }],
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/lit_sp_en", "scripts", "vendor", "submission_src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = [".", "src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["vendor"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
