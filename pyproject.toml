@@ -33,6 +33,7 @@ baseline = [
   # Pinned to the official runtime (drivendataorg/lost-in-transcription-runtime).
   "ctranslate2==4.8.2",
   "faster-whisper==1.2.1",
+  "av==18.1.0",
 ]
 qwen = [
   # Official runtime uv.lock pins. transformers 4.57.6 requires huggingface-hub<1, which
