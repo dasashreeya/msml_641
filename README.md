@@ -37,7 +37,8 @@ uv sync --extra audit --extra dev --extra prep --extra baseline
 uv run pytest -q
 ```
 
-Then download and ingest both datasets as described in `docs/DATA.md`.
+Then follow Task 0 in `docs/WORK_SPLIT.md`. Only Task C needs a download (the 16 MB dev
+set, `docs/DATA.md`); the models are already trained, so nobody needs the Bangor corpus.
 
 ## Pipeline
 

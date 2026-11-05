@@ -3,13 +3,14 @@
 Team: **Shreeya Dasa Lakshminath**, **Rachel Bubeck**, **Teammate 3 (name TBD)**.
 
 The project builds on the existing pipeline, data and results: no new datasets, **no
-retraining**, and no GPU. The remaining work goes deeper on what exists:
+retraining**, no GPU, and no re-downloading the training data. The models are already
+trained. The remaining work goes deeper on what exists:
 
 | Task | Owner | What | Estimated effort |
 |---|---|---|---|
 | Completed | Shreeya | Pipeline, baselines, fine-tuning, held-out evaluation, system combination | done |
-| Task 0 | Rachel, Teammate 3 | Setup, data download, smoke test | ~2–3 h |
-| Task B | Rachel | Error analysis of the existing systems | ~15–20 h over 4 weeks |
+| Task 0 | Rachel, Teammate 3 | Setup and smoke test (Teammate 3 also downloads the 16 MB dev set) | ~1–2 h |
+| Task B | Rachel | Error analysis of the existing systems | ~10–15 h over 4 weeks |
 | Task C | Teammate 3 | Better decoding settings for the existing models (no training) | ~8–10 h hands-on, plus ~3–4 h of unattended laptop CPU time |
 | Report and slides | Everyone | Each writes their own sections | shared |
 
@@ -64,9 +65,15 @@ target paths are already gitignored.
 |---|---|---|---|
 | Fine-tuned model `ft-g7` (CTranslate2: `model.bin`, `config.json`, tokenizer files) | ~1.6 GB | `artifacts/models/ft-g7/` | Task C |
 | Existing predictions: `<run>.csv` and `<run>.reference.csv` for every run, **excluding the 4 `ger*` files** | ~4 MB | `data/interim/predictions/` | Tasks B and C |
+| English/Spanish word lexicon `bangor_lexicon.json` (6,355 words from Bangor's CHAT language tags) | ~110 KB | `data/processed/bangor_lexicon.json` | Task B |
 
 Each prediction pair has the columns `audio_filename,transcript`: the system's output in
 `<run>.csv` and the matching reference transcripts in `<run>.reference.csv`.
+
+**Nobody needs to download the Bangor Miami corpus.** The models were already trained on
+it, and the lexicon above is the only part the remaining work uses. The corpus has also
+been removed from Mozilla Data Collective (its API returns `410 Dataset no longer
+available` as of Nov 2026; see `docs/DATA.md`).
 
 ---
 
@@ -80,22 +87,28 @@ Each prediction pair has the columns `audio_filename,transcript`: the system's o
    uv sync --extra audit --extra dev --extra prep --extra baseline
    uv run pytest -q          # expect: all passed, a few skipped
    ```
-3. Create a free account at https://mozilladatacollective.com. Download and ingest
-   **both** datasets as described in `docs/DATA.md`. The dev set is ~16 MB; Bangor is
-   ~1.1 GB and is only needed for the lexicon in Task B.
-4. Copy the shared inputs into place (table above).
-5. Smoke test, which decodes 10 clips on CPU in a few minutes:
-   ```sh
-   uv run python scripts/whisper_baseline.py --model large-v3-turbo --language auto \
-       --limit 10 --run-name smoke-<yourname>
-   ```
-   Post the WER from `reports/baselines/smoke-<yourname>.json` in the group chat. Both
-   numbers should match each other.
+3. Copy the shared inputs into place (table above).
+4. **Teammate 3 only:** create a free account at https://mozilladatacollective.com and
+   download and ingest the **dev set** (~16 MB) as described in `docs/DATA.md`. Task C
+   re-decodes the dev audio, so it needs the clips. Rachel needs no download: Task B
+   works from the shared predictions, which already contain the references.
+5. Smoke test:
+   - **Rachel**, which reads the shared predictions only:
+     ```sh
+     uv run python scripts/compare_runs.py --output reports/baselines/smoke-rachel.json \
+         large-v3-turbo-auto-int8-b5 large-v3-turbo-auto-int8-b5-prompt
+     ```
+   - **Teammate 3**, which decodes 10 dev clips on CPU in a few minutes:
+     ```sh
+     uv run python scripts/whisper_baseline.py --model large-v3-turbo --language auto \
+         --limit 10 --run-name smoke-<yourname>
+     ```
+   Post that it ran (and Teammate 3's WER) in the group chat.
 6. Read `docs/PRIOR_WORK.md` and skim `reports/baselines/comparison-*.json` to see what
    has been measured.
 
-**Done when:** tests pass, both datasets are ingested, and your smoke WER matches your
-teammate's.
+**Done when:** tests pass, the shared inputs are in place, Teammate 3 has the dev set
+ingested, and both smoke tests run.
 
 ---
 
@@ -117,7 +130,7 @@ the core NLP analysis in the report.
 | Best system combination | `r3c-M11b` (also `r4-M13-rover5`) |
 | Fine-tuned on held-out folds | `kfold-d2-heldout-breaks` |
 
-### B1. Metrics module (by Sun Nov 15, ~6–8 h)
+### B1. Metrics module (by Sun Nov 15, ~4–7 h)
 
 Create `src/lit_sp_en/metrics.py` and `tests/test_metrics.py`.
 
@@ -125,10 +138,10 @@ Create `src/lit_sp_en/metrics.py` and `tests/test_metrics.py`.
    `lit_sp_en.transcripts.normalize_text` (the same normalization WER uses), then
    compute a character-level error rate. `jiwer.cer` works, and jiwer is already
    installed.
-2. **Per-language WER.** Label each reference word `en` or `es` using the
-   word-to-language lexicon built from Bangor's CHAT language tags:
-   - read `build_lexicon` and `lexicon_mix` in `scripts/audit_data.py` (around line 500)
-     and reuse them;
+2. **Per-language WER.** Label each reference word `eng` or `spa` using the shared
+   lexicon `data/processed/bangor_lexicon.json`. Its `lexicon` key maps lowercase words to
+   `eng`/`spa`; it was built with `build_lexicon` in `scripts/audit_data.py` (around line
+   500), and `lexicon_mix` there shows how words are tokenized and looked up:
    - align reference and hypothesis with jiwer (`jiwer.process_words`), then count
      errors on reference words of each language;
    - report words the lexicon doesn't cover as `unknown`, along with the lexicon's
@@ -141,7 +154,7 @@ Create `src/lit_sp_en/metrics.py` and `tests/test_metrics.py`.
 5. **Tests.** Write small hand-made examples with known answers: one substitution, one
    switch, an empty hypothesis, and a word the lexicon doesn't know.
 
-### B2. Run it on the existing systems (by Sun Nov 22, ~4–5 h)
+### B2. Run it on the existing systems (by Sun Nov 22, ~2–3 h)
 
 Write `scripts/analyze_errors.py`.
 
@@ -153,7 +166,7 @@ Write `scripts/analyze_errors.py`.
 - Copy the structure of `scripts/compare_runs.py`, which already loads prediction CSVs
   and writes aggregate JSON.
 
-### B3. Error taxonomy and figures (by Sun Nov 29, ~5–7 h)
+### B3. Error taxonomy and figures (by Sun Nov 29, ~3–5 h)
 
 1. Take about 50 errors from the best system (the combination run) and hand-label each:
    - wrong-language substitution (a Spanish word written as an English one, or the
