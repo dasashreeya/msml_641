@@ -12,7 +12,12 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(ROOT))
 
-from lit_sp_en.metrics import corpus_metrics, corpus_confidence_intervals
+from lit_sp_en.metrics import (
+    corpus_metrics,
+    corpus_confidence_intervals,
+    cer_confidence_interval,
+)
+
 from scripts.audit_data import assert_no_transcript_leak
 
 PREDICTIONS_DIR = ROOT / "data" / "interim" / "predictions"
@@ -77,6 +82,9 @@ def analyze_system(
     metrics = corpus_metrics(references, hypotheses, lexicon)
     intervals = corpus_confidence_intervals(
         references, hypotheses, lexicon, reps=reps, seed=seed
+    )
+    intervals["cer"] = cer_confidence_interval(
+        references, hypotheses, reps=reps, seed=seed
     )
 
     return {

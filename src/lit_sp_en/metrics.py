@@ -257,3 +257,32 @@ def paired_wer_interval(
     return paired_bootstrap(
         counts_a, counts_b, reps=reps, seed=seed
     )
+def cer_confidence_interval(
+    references: Sequence[str],
+    hypotheses: Sequence[str],
+    reps: int = 2000,
+    seed: int = 0,
+) -> dict:
+    """Bootstrap a corpus CER confidence interval by resampling clips."""
+
+    if len(references) != len(hypotheses):
+        raise ValueError("Reference and hypothesis lengths differ.")
+
+    counts = []
+
+    for reference, hypothesis in zip(references, hypotheses, strict=True):
+        ref = normalize_text(reference)
+        hyp = normalize_text(hypothesis)
+
+        result = jiwer.process_characters(ref, hyp)
+
+        counts.append({
+            "substitutions": result.substitutions,
+            "deletions": result.deletions,
+            "insertions": result.insertions,
+            "reference_words": result.hits
+            + result.substitutions
+            + result.deletions,
+        })
+
+    return bootstrap_interval(counts, reps=reps, seed=seed)

@@ -1,0 +1,13 @@
+{
+  "run": "r3c-M11b",
+  "sample_size": 50,
+  "sampling_seed": 42,
+  "counts": {
+    "wrong_language": 4,
+    "translation": 2,
+    "dropped_at_switch": 2,
+    "proper_noun": 2,
+    "filler": 4,
+    "other": 36
+  }
+}
