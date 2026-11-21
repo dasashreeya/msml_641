@@ -89,7 +89,8 @@ short, and in the same casual mixed style as P0:
 That is 11 tuning runs. On a laptop CPU, each 93-clip run should take roughly 9–15 min,
 since a full 155-clip run took about 24 min (`decode_seconds` ≈ 1,462 s). The whole sweep
 should take about 2–3 h unattended. `scripts/task_c_decode.sh tune` runs them in this
-order and skips any run whose report already exists.
+order and skips any run whose report already exists. On Windows, `scripts\task_c_decode.ps1 tune`
+runs the same runs with the same names and prompts.
 
 ## Comparison
 
