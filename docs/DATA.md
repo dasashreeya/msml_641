@@ -1,6 +1,6 @@
 # Data: where to get it and how to set it up
 
-**Who needs what:** only Task C (Teammate 3) needs a download: the dev set, ~16 MB.
+**Who needs what:** only Task C (Srinickethan) needs a download: the dev set, ~16 MB.
 Rachel's Task B works from the shared predictions, and nobody needs Bangor (see section 2).
 
 The dev set is public on Mozilla Data Collective (MDC). Whoever needs it downloads
