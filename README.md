@@ -1,7 +1,7 @@
 # Speech recognition for Spanish–English code-switched conversation
 
 MSML641 (Natural Language Processing, Fall 2026) term project:
-**Rachel Bubeck, Shreeya Dasa Lakshminath, Teammate 3 (name TBD).**
+**Rachel Bubeck, Shreeya Dasa Lakshminath, Srinickethan**
 
 Bilingual speakers often switch between Spanish and English mid-sentence. Speech
 recognizers built for one language at a time handle this badly: they translate instead of
