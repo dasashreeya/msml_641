@@ -1,6 +1,6 @@
 # Work split
 
-Team: **Shreeya Dasa Lakshminath**, **Rachel Bubeck**, **Teammate 3 (name TBD)**.
+Team: **Shreeya Dasa Lakshminath**, **Rachel Bubeck**, **Srinickethan**.
 
 The project builds on the existing pipeline, data and results: no new datasets, **no
 retraining**, no GPU, and no re-downloading the training data. The models are already
@@ -11,7 +11,7 @@ trained. The remaining work goes deeper on what exists:
 | Completed | Shreeya | Pipeline, baselines, fine-tuning, held-out evaluation, system combination | done |
 | Task 0 | Rachel, Teammate 3 | Setup and smoke test (Teammate 3 also downloads the 16 MB dev set) | ~1–2 h |
 | Task B | Rachel | Error analysis of the existing systems | ~10–15 h over 4 weeks |
-| Task C | Teammate 3 | Better decoding settings for the existing models (no training) | ~8–10 h hands-on, plus ~3–4 h of unattended laptop CPU time |
+| Task C | Srinickethan | Better decoding settings for the existing models (no training) | ~8–10 h hands-on, plus ~3–4 h of unattended laptop CPU time |
 | Report and slides | Everyone | Each writes their own sections | shared |
 
 Effort figures are estimates. The CPU time is measured: one full decode of the dev set
@@ -22,7 +22,7 @@ turbo 928 s, turbo with prompt 1,539 s, `ft-g7` with prompt 1,462 s).
 
 | Date | Milestone |
 |---|---|
-| Sun Nov 8 | Task 0 done by Rachel and Teammate 3; smoke-test WERs posted in the group chat |
+| Sun Nov 8 | Task 0 done by Rachel and Srinickethan; smoke-test WERs posted in the group chat |
 | Sun Nov 15 | B1 metrics module merged; C1 tuning protocol written |
 | Sun Nov 22 | B2 analysis numbers; C2 decoding comparison done |
 | Sun Nov 29 | B3 taxonomy and figures; C3 combination; everyone's report sections drafted |
@@ -77,7 +77,7 @@ available` as of Nov 2026; see `docs/DATA.md`).
 
 ---
 
-## Task 0: setup (Rachel and Teammate 3, by Sun Nov 8)
+## Task 0: setup (Rachel and Srinickethan, by Sun Nov 8)
 
 1. Install [`uv`](https://docs.astral.sh/uv/) and `ffmpeg` (macOS:
    `brew install uv ffmpeg`).
@@ -88,7 +88,7 @@ available` as of Nov 2026; see `docs/DATA.md`).
    uv run pytest -q          # expect: all passed, a few skipped
    ```
 3. Copy the shared inputs into place (table above).
-4. **Teammate 3 only:** create a free account at https://mozilladatacollective.com and
+4. **Srinickethan only:** create a free account at https://mozilladatacollective.com and
    download and ingest the **dev set** (~16 MB) as described in `docs/DATA.md`. Task C
    re-decodes the dev audio, so it needs the clips. Rachel needs no download: Task B
    works from the shared predictions, which already contain the references.
@@ -98,7 +98,7 @@ available` as of Nov 2026; see `docs/DATA.md`).
      uv run python scripts/compare_runs.py --output reports/baselines/smoke-rachel.json \
          large-v3-turbo-auto-int8-b5 large-v3-turbo-auto-int8-b5-prompt
      ```
-   - **Teammate 3**, which decodes 10 dev clips on CPU in a few minutes:
+   - **Srinickethan**, which decodes 10 dev clips on CPU in a few minutes:
      ```sh
      uv run python scripts/whisper_baseline.py --model large-v3-turbo --language auto \
          --limit 10 --run-name smoke-<yourname>
@@ -107,7 +107,7 @@ available` as of Nov 2026; see `docs/DATA.md`).
 6. Read `docs/PRIOR_WORK.md` and skim `reports/baselines/comparison-*.json` to see what
    has been measured.
 
-**Done when:** tests pass, the shared inputs are in place, Teammate 3 has the dev set
+**Done when:** tests pass, the shared inputs are in place, Srinickethan has the dev set
 ingested, and both smoke tests run.
 
 ---
@@ -197,7 +197,7 @@ come out of a script, not by hand.
 
 ---
 
-## Task C: better decoding for the existing models, no training (Teammate 3)
+## Task C: better decoding for the existing models, no training (Srinickethan)
 
 **Why.** The models are trained and stay as they are. Whisper's decoding settings
 (prompt, beam size, voice-activity filtering, repetition penalty, language) can still
@@ -288,7 +288,7 @@ the final setting was chosen on the tuning folds only.
 | Introduction, motivation, related work | Rachel |
 | Data and preprocessing; models; baseline and fine-tuning results (from `reports/`) | Shreeya |
 | Error analysis (Task B) | Rachel |
-| Decode-time improvements (Task C) | Teammate 3 |
+| Decode-time improvements (Task C) | Srinickethan |
 | Conclusion, limitations, future work | Everyone |
 
 Every number in the report should point to a file in `reports/`.
