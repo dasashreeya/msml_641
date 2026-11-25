@@ -1,0 +1,155 @@
+{
+  "run": "c2-base-report",
+  "backend": "faster-whisper",
+  "generated_at": "2026-11-25T01:21:12+00:00",
+  "privacy": "aggregates only: no transcript text, file names, speaker codes or audio",
+  "dataset": {
+    "split": "dev",
+    "rows": 62,
+    "limit": null
+  },
+  "model": {
+    "name": "ft-g7",
+    "local_dir": "C:\\Users\\srini\\msml_641\\artifacts\\models\\ft-g7",
+    "files_sha256": {
+      "config.json": "b0253ea6c0d3bea6b1e19e91a02acfd3b53f4467362efcb5a3e6b16c9b3a9b7e",
+      "model.bin": "e4e23736e61627d143ff2acbc541b1647a4d274feb8260f5108516b61ff828fc",
+      "preprocessor_config.json": "654cf18d3e163b948ceaf9766da56ce0b52de265d58673cf61c9376f126bd499",
+      "tokenizer.json": "5c1bf30c9e716e1477bedef846b01be0013daecb89e9e3ef7ab89b23c178df1b",
+      "vocabulary.json": "c69260f2ab26d659b7c398f9a2b2b48ed0df16c3b47d7326782fd9cba71690c1"
+    }
+  },
+  "decoding": {
+    "language": "auto",
+    "task": "transcribe",
+    "beam_size": 5,
+    "compute_type": "int8",
+    "device": "cpu",
+    "cpu_threads": 8,
+    "initial_prompt_sha256": "c44393b079a8e80f96f323d97983005f0e913c95f1981c766cfa8c8be1a8321d",
+    "extra_transcribe_arguments": {},
+    "other_transcribe_arguments": "faster-whisper 1.2.1 defaults"
+  },
+  "software": {
+    "faster_whisper": "1.2.1",
+    "ctranslate2": "4.8.2",
+    "python": "3.12.16",
+    "machine": "AMD64"
+  },
+  "timing": {
+    "audio_seconds": 870.79,
+    "model_load_seconds": 21.0,
+    "decode_seconds": 2544.2,
+    "real_time_factor": 2.9217
+  },
+  "detected_language": {
+    "en": {
+      "clips": 45,
+      "mean_probability": 0.8233
+    },
+    "es": {
+      "clips": 17,
+      "mean_probability": 0.6802
+    }
+  },
+  "scores": {
+    "official": {
+      "clips": 62,
+      "reference_words": 1982,
+      "wer": 0.1029,
+      "substitutions": 129,
+      "deletions": 31,
+      "insertions": 44,
+      "bootstrap": {
+        "level": 0.95,
+        "reps": 2000,
+        "low": 0.0845,
+        "high": 0.1226
+      }
+    },
+    "groups": {
+      "language_label": {
+        "enspa": {
+          "clips": 62,
+          "reference_words": 1982,
+          "wer": 0.1029,
+          "substitutions": 129,
+          "deletions": 31,
+          "insertions": 44
+        }
+      },
+      "speaker": {
+        "speaker_1": {
+          "clips": 30,
+          "reference_words": 1215,
+          "wer": 0.1128,
+          "substitutions": 83,
+          "deletions": 25,
+          "insertions": 29
+        },
+        "speaker_2": {
+          "clips": 32,
+          "reference_words": 767,
+          "wer": 0.0874,
+          "substitutions": 46,
+          "deletions": 6,
+          "insertions": 15
+        }
+      },
+      "duration_bucket_seconds": {
+        "10-20": {
+          "clips": 38,
+          "reference_words": 1077,
+          "wer": 0.1086,
+          "substitutions": 72,
+          "deletions": 17,
+          "insertions": 28
+        },
+        "20-30": {
+          "clips": 7,
+          "reference_words": 462,
+          "wer": 0.0996,
+          "substitutions": 30,
+          "deletions": 9,
+          "insertions": 7
+        },
+        "5-10": {
+          "clips": 14,
+          "reference_words": 252,
+          "wer": 0.0952,
+          "substitutions": 14,
+          "deletions": 3,
+          "insertions": 7
+        },
+        "<5": {
+          "clips": 1,
+          "reference_words": 6,
+          "wer": 0.0,
+          "substitutions": 0,
+          "deletions": 0,
+          "insertions": 0
+        },
+        ">=30": {
+          "clips": 2,
+          "reference_words": 185,
+          "wer": 0.0919,
+          "substitutions": 13,
+          "deletions": 2,
+          "insertions": 2
+        }
+      }
+    },
+    "diagnostics": {
+      "note": "not the official metric; isolates formatting from recognition errors",
+      "wer_lowercased_no_apostrophe_no_ellipsis": 0.0878,
+      "empty_hypotheses": 0,
+      "hypotheses_with_repeated_trigram_x4": 0,
+      "hypothesis_to_reference_word_ratio": 1.0066,
+      "clips_with_hypothesis_over_2x_reference_words": 0
+    }
+  },
+  "official_cli": {
+    "wer": 0.102926,
+    "matches_in_process_wer": true
+  }
+}
