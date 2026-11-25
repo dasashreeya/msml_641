@@ -80,3 +80,26 @@ def test_refuses_runs_over_different_clips(workspace: Path) -> None:
     _write(workspace / "pred" / "c.csv", ["x.mp3", "c1.mp3", "c2.mp3"], RUNS["c"])
     with pytest.raises(SystemExit, match="differ"):
         combine_runs.main(["a", "b", "c", "--name", "bad"])
+
+
+def test_combination_scores_on_a_fold_subset(workspace: Path) -> None:
+    """C3 flow: combine with the sentence-break rule, then score_folds.py on a clip subset."""
+    from scripts import score_folds
+
+    # The incumbent gets the same post-processing rule, as ft-g7-...-prompt-breaks does.
+    assert combine_runs.main(["a", "--name", "a-breaks",
+                              "--method", "sentence-breaks-keep-ellipsis"]) == 0
+    assert combine_runs.main(["a", "b", "c", "--name", "combo", "--method", "rover-order",
+                              "--preprocess", "sentence-breaks-keep-ellipsis"]) == 0
+    out = workspace / "c3.json"
+    argv = ["combo", "--incumbent", "a-breaks", "--ids", "dev001,dev002", "--output", str(out)]
+    assert score_folds.main(argv, dev_dir=workspace / "enspa_dev",
+                            predictions=workspace / "pred", reports=workspace / "reports") == 0
+    entry = json.loads(out.read_text())["results"][0]["groups"]["all"]
+    assert entry["clips"] == 2
+    # Clip 1 is where "a" drops "hola" and the others keep it, so the combination can only help.
+    assert entry["difference"] <= 0
+    # Against an incumbent without the rule (here: with no report to say), it is refused.
+    assert score_folds.main(["combo", "--incumbent", "a", "--ids", "dev001"],
+                            dev_dir=workspace / "enspa_dev", predictions=workspace / "pred",
+                            reports=workspace / "reports") == 2

@@ -137,17 +137,76 @@ Decided now, applied mechanically:
   are committed. Prediction CSVs stay in `data/interim/predictions/` (gitignored).
 - Settings with no effect are reported as results.
 
-## C3 (system combination), for planning
+## C3: system combination
 
-- **The MBR vs ROVER choice is made on the tuning clips too.**
-- **`combine_runs.py` needs every run to cover the same clips.** It stops with
-  `clips differ` otherwise, so the existing full-dev Qwen runs can't be combined with a
-  93- or 62-clip run.
-- **C3 therefore needs one more decode,** the final setting on all 155 clips. Its
-  combinations are then scored on the report folds only. How to restrict
-  `combine_runs.py` output to the report folds is to be settled before C3 starts, and
-  recorded under Deviations.
+Written on 2026-11-25, after C2 and before any C3 run.
+
+**What is being measured.** Combining `ft-g7` with other systems (MBR selection or ROVER
+voting, `scripts/combine_runs.py`) lowered full-dev WER in earlier work, to 0.0885 at best
+(`rover4-qeqn.json`). Those candidate sets and methods were chosen on all 155 clips,
+including the report folds. C3 chooses among them on the tuning folds only and reports the
+choice once on the report folds. This gives a held-out estimate of the combination gain.
+
+**Inputs: no new decoding.** C2's final setting is the baseline, so the existing full-dev
+run `ft-g7-turbo-auto-int8-b5-prompt` already is the best `ft-g7` run (see Deviations,
+2026-11-25). All inputs are existing full-dev prediction CSVs from the shared handover.
+
+**Incumbent.** `c3-ftg7-breaks` is `ft-g7` with the same post-processing rule the
+combinations use (`sentence-breaks-keep-ellipsis`, docs M11b), built with `combine_runs.py`.
+A combination is compared against it, so the measured gain is the combination's own.
+`score_folds.py` refuses comparisons whose post-processing differs.
+
+**Candidates: 3 sets × 3 methods = 9 combinations, fixed now.** `ft-g7` comes first in
+every set, so it is the tie-break and the ROVER order backbone.
+
+| Set | Systems |
+|---|---|
+| s3 | `ft-g7`, `large-v3-turbo-auto-int8-b5-prompt-guard`, `Qwen3-ASR-1.7B-auto-cpu-float32-ctx` |
+| s4 | `ft-g7`, `large-v3-turbo-auto-int8-b5-prompt-guard`, `Qwen3-ASR-1.7B-es-cpu-float32`, `Qwen3-ASR-1.7B-en-cpu-float32` |
+| s5 | `ft-g7`, `ft-s2-turbo-auto-int8-b5-prompt`, `large-v3-turbo-auto-int8-b5-prompt-guard`, `Qwen3-ASR-1.7B-auto-cpu-float32-ctx`, `Qwen3-ASR-1.7B-es-cpu-float32` |
+
+Methods: `mbr`, `rover-backbone`, `rover-order`. Run names: `c3-<method>-<set>`, for
+example `c3-rover-order-s4`. Every combination uses `--preprocess sentence-breaks-keep-ellipsis`.
+These are the sets behind the earlier best results (`r3c-g7-rover`, `rover4-qeqn`,
+`rover5-noq06`), so the choice is not new search on the report folds.
+
+**Scoring.** `scripts/score_folds.py` scores each full-dev combination on a fold list
+only, against the incumbent on the same clips (paired bootstrap, 2,000 resamples).
+
+**Selection rule:**
+
+1. A combination **helps** only if it lowers tuning WER (folds 0–2) by at least 0.002
+   absolute against `c3-ftg7-breaks`. Smaller differences count as ties.
+2. The candidate is the helpful combination with the lowest tuning WER. If none helps,
+   C3 reports that combination did not help on held-out clips.
+3. Ties go to the simpler combination: fewer systems, then `mbr`, then `rover-backbone`,
+   then `rover-order`.
+4. The chosen combination is scored **once** on the report folds (3–4), against the
+   incumbent, overall and per speaker (`--by-speaker`). That is the headline. Nothing is
+   re-chosen after seeing it.
+5. Secondary, on the report folds: the chosen combination against plain `ft-g7` (no
+   post-processing, `--allow-mismatch`). This gives the total gain over C2's final setting,
+   from post-processing and combination together, and is labelled as such.
+
+**Known limit.** The three sets were picked by earlier full-dev experiments that saw the
+report folds. Even the held-out number keeps some optimism from that, and the report says so.
+
+**Commands:** `scripts/task_c_decode.ps1` (or `.sh`) stages `c3-combine`, `c3-tune` and
+`c3-report`.
 
 ## Deviations
 
-_None yet._
+- **2026-11-25, C2 reproducibility check.** The re-run baseline differs from the original
+  run by −0.0020 [−0.0047, +0.0003] on the tuning clips (`c2-comparisons.txt`). That is
+  exactly the 0.002 limit, not over it, so C2 went ahead. The cause is decoding on a
+  different machine (int8 on CPU is not bit-identical across hardware). All C2 comparisons
+  use runs from one machine.
+- **2026-11-25, interval labels.** `compare_matched.py` labels every interval that is not
+  entirely below zero as `includes zero`, including intervals entirely above zero. The C2
+  results were read from the interval bounds, not the label. `score_folds.py` labels
+  intervals ABOVE ZERO, BELOW ZERO or includes zero.
+- **2026-11-25, C3 inputs.** The C3 plan above (C1) expected one more full-dev decode of the
+  final setting. The final setting is the baseline, and its full-dev run already exists, so
+  C3 uses that run (decoded on the original machine, like the other systems it is combined
+  with) and no new decode is made. The restriction to fold lists is done by the new
+  `scripts/score_folds.py`.

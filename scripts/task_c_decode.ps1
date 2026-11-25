@@ -14,6 +14,15 @@ Run from the repository root (Windows PowerShell 5.1 or PowerShell 7):
       final setting + baseline on the report folds (3-4, 62 clips), scored once
       (-Settings base when no setting helped: only the baseline is decoded)
 
+C3 (system combination, no decoding; docs/TUNING_PROTOCOL.md "C3"):
+
+  .\scripts\task_c_decode.ps1 c3-combine
+      builds the incumbent c3-ftg7-breaks and the 9 combinations c3-<method>-<set>
+  .\scripts\task_c_decode.ps1 c3-tune
+      scores all 9 on the tuning folds -> reports\baselines\c3-tune.json
+  .\scripts\task_c_decode.ps1 c3-report -Settings c3-rover-order-s4
+      the chosen combination, once, on the report folds (overall and per speaker)
+
 Add -DryRun to any stage to print the commands without running them.
 Setting names for -Settings: prompt-none prompt-p1 prompt-p2 beam1 beam8 vad rep1.1
 notempfb lang-en lang-es.
@@ -31,7 +40,7 @@ whisper_baseline.py records, before anything runs.
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true, Position = 0)]
-    [ValidateSet('tune', 'compare', 'combined', 'report')]
+    [ValidateSet('tune', 'compare', 'combined', 'report', 'c3-combine', 'c3-tune', 'c3-report')]
     [string]$Stage,
     [string[]]$Settings = @(),
     [switch]$DryRun
@@ -141,6 +150,32 @@ function Invoke-Compare([string]$Candidate, [string]$Incumbent) {
     Invoke-Uv @('run', '--no-sync', 'python', 'scripts/compare_matched.py', $Candidate, $Incumbent) -AllowFailure
 }
 
+# --- C3: combinations of existing full-dev runs (docs/TUNING_PROTOCOL.md, "C3") -------------
+$FtG7 = 'ft-g7-turbo-auto-int8-b5-prompt'
+$C3Incumbent = 'c3-ftg7-breaks'
+$C3Rule = 'sentence-breaks-keep-ellipsis'
+$C3Sets = [ordered]@{
+    s3 = @($FtG7, 'large-v3-turbo-auto-int8-b5-prompt-guard', 'Qwen3-ASR-1.7B-auto-cpu-float32-ctx')
+    s4 = @($FtG7, 'large-v3-turbo-auto-int8-b5-prompt-guard', 'Qwen3-ASR-1.7B-es-cpu-float32',
+           'Qwen3-ASR-1.7B-en-cpu-float32')
+    s5 = @($FtG7, 'ft-s2-turbo-auto-int8-b5-prompt', 'large-v3-turbo-auto-int8-b5-prompt-guard',
+           'Qwen3-ASR-1.7B-auto-cpu-float32-ctx', 'Qwen3-ASR-1.7B-es-cpu-float32')
+}
+$C3Methods = @('mbr', 'rover-backbone', 'rover-order')
+$C3Names = @(foreach ($set in $C3Sets.Keys) { foreach ($method in $C3Methods) { "c3-$method-$set" } })
+
+function Assert-Predictions([string[]]$Runs) {
+    $missing = @()
+    foreach ($run in $Runs) {
+        foreach ($suffix in @('.csv', '.reference.csv')) {
+            if (-not (Test-Path "data/interim/predictions/$run$suffix")) { $missing += "$run$suffix" }
+        }
+    }
+    if ($missing.Count) {
+        throw "missing shared predictions in data\interim\predictions: $($missing -join ', ')"
+    }
+}
+
 if (-not $DryRun -and -not (Get-Command uv -ErrorAction SilentlyContinue)) {
     throw 'uv is not on PATH; install it and open a new PowerShell window'
 }
@@ -180,5 +215,47 @@ switch ($Stage) {
         Invoke-Decode 'c2-base-report' $Report (Get-Config @())
         Invoke-Decode 'c2-final-report' $Report $final
         Invoke-Compare 'c2-final-report' 'c2-base-report'
+    }
+    'c3-combine' {
+        $inputs = @($C3Sets.Values | ForEach-Object { $_ }) | Sort-Object -Unique
+        if (-not $DryRun) { Assert-Predictions $inputs; Assert-Exists @('data/raw/dev/enspa_dev/metadata.tsv') }
+        if (Test-Path "reports/baselines/$C3Incumbent.json") {
+            Write-Host "skip $C3Incumbent (report exists)"
+        } else {
+            Write-Host "=== $C3Incumbent"
+            Invoke-Uv @('run', '--no-sync', 'python', 'scripts/combine_runs.py', $FtG7,
+                        '--name', $C3Incumbent, '--method', $C3Rule)
+        }
+        foreach ($set in $C3Sets.Keys) {
+            foreach ($method in $C3Methods) {
+                $name = "c3-$method-$set"
+                if (Test-Path "reports/baselines/$name.json") { Write-Host "skip $name (report exists)"; continue }
+                Write-Host "=== $name"
+                Invoke-Uv (@('run', '--no-sync', 'python', 'scripts/combine_runs.py') + $C3Sets[$set] +
+                           @('--name', $name, '--method', $method, '--preprocess', $C3Rule))
+            }
+        }
+        Write-Host 'Full-dev WERs above include the report folds: do not choose from them. Next: c3-tune'
+    }
+    'c3-tune' {
+        if (-not $DryRun) { Assert-Exists @($Tune) }
+        Invoke-Uv (@('run', '--no-sync', 'python', 'scripts/score_folds.py') + $C3Names +
+                   @('--incumbent', $C3Incumbent, '--ids', "@$Tune",
+                     '--output', 'reports/baselines/c3-tune.json'))
+    }
+    'c3-report' {
+        if ($Settings.Count -ne 1 -or $C3Names -notcontains $Settings[0]) {
+            throw "c3-report needs the one chosen combination, e.g. -Settings c3-rover-order-s4; choose from: $($C3Names -join ', ')"
+        }
+        if (-not $DryRun) { Assert-Exists @($Report) }
+        $chosen = $Settings[0]
+        # Headline: the combination's own gain, against ft-g7 with the same post-processing.
+        Invoke-Uv @('run', '--no-sync', 'python', 'scripts/score_folds.py', $chosen,
+                    '--incumbent', $C3Incumbent, '--ids', "@$Report", '--by-speaker',
+                    '--output', 'reports/baselines/c3-report.json')
+        # Secondary: total gain over C2's final setting (post-processing + combination).
+        Invoke-Uv @('run', '--no-sync', 'python', 'scripts/score_folds.py', $chosen,
+                    '--incumbent', $FtG7, '--ids', "@$Report", '--allow-mismatch',
+                    '--output', 'reports/baselines/c3-report-vs-plain.json')
     }
 }
