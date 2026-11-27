@@ -1,0 +1,34 @@
+{
+  "generated_at": "2026-11-27T16:57:19+00:00",
+  "privacy": "aggregates only: no transcript text, clip names or speaker codes",
+  "tool": "scripts/score_folds.py",
+  "ids": {
+    "file": "report.txt",
+    "clips": 62,
+    "sha256_12": "f0aefd7fa302"
+  },
+  "incumbent": "ft-g7-turbo-auto-int8-b5-prompt",
+  "incumbent_postprocessing": "none",
+  "bootstrap": {
+    "reps": 2000,
+    "seed": 20260908,
+    "level": 0.95
+  },
+  "results": [
+    {
+      "candidate": "c3-rover-order-s4",
+      "groups": {
+        "all": {
+          "clips": 62,
+          "reference_words": 1982,
+          "incumbent_wer": 0.1044,
+          "candidate_wer": 0.0858,
+          "difference": -0.0187,
+          "low": -0.0318,
+          "high": -0.0069,
+          "interval": "BELOW ZERO"
+        }
+      }
+    }
+  ]
+}

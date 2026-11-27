@@ -1,0 +1,22 @@
+﻿== c2-base [none], paired bootstrap 2000 resamples seed 20260908, on the candidate's clips ==
+ft-g7-turbo-auto-int8-b5-prompt clips= 93  ft-g7-turbo-auto-int8-b5-prompt=0.1099  candidate=0.1079  diff=-0.0020 [-0.0047, +0.0003]  includes zero
+== c2-prompt-none [none], paired bootstrap 2000 resamples seed 20260908, on the candidate's clips ==
+c2-base                clips= 93  c2-base=0.1079  candidate=0.1149  diff=+0.0070 [+0.0006, +0.0135]  includes zero
+== c2-prompt-p1 [none], paired bootstrap 2000 resamples seed 20260908, on the candidate's clips ==
+c2-base                clips= 93  c2-base=0.1079  candidate=0.1125  diff=+0.0046 [+0.0003, +0.0090]  includes zero
+== c2-prompt-p2 [none], paired bootstrap 2000 resamples seed 20260908, on the candidate's clips ==
+c2-base                clips= 93  c2-base=0.1079  candidate=0.1135  diff=+0.0056 [+0.0014, +0.0104]  includes zero
+== c2-beam1 [none], paired bootstrap 2000 resamples seed 20260908, on the candidate's clips ==
+c2-base                clips= 93  c2-base=0.1079  candidate=0.1165  diff=+0.0086 [+0.0032, +0.0141]  includes zero
+== c2-beam8 [none], paired bootstrap 2000 resamples seed 20260908, on the candidate's clips ==
+c2-base                clips= 93  c2-base=0.1079  candidate=0.1116  diff=+0.0037 [+0.0012, +0.0066]  includes zero
+== c2-vad [none], paired bootstrap 2000 resamples seed 20260908, on the candidate's clips ==
+c2-base                clips= 93  c2-base=0.1079  candidate=0.1139  diff=+0.0060 [+0.0010, +0.0109]  includes zero
+== c2-rep1.1 [none], paired bootstrap 2000 resamples seed 20260908, on the candidate's clips ==
+c2-base                clips= 93  c2-base=0.1079  candidate=0.1145  diff=+0.0066 [+0.0024, +0.0108]  includes zero
+== c2-notempfb [none], paired bootstrap 2000 resamples seed 20260908, on the candidate's clips ==
+c2-base                clips= 93  c2-base=0.1079  candidate=0.1129  diff=+0.0050 [+0.0022, +0.0080]  includes zero
+== c2-lang-en [none], paired bootstrap 2000 resamples seed 20260908, on the candidate's clips ==
+c2-base                clips= 93  c2-base=0.1079  candidate=0.1109  diff=+0.0030 [+0.0006, +0.0058]  includes zero
+== c2-lang-es [none], paired bootstrap 2000 resamples seed 20260908, on the candidate's clips ==
+c2-base                clips= 93  c2-base=0.1079  candidate=0.1129  diff=+0.0050 [+0.0020, +0.0079]  includes zero

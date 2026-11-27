@@ -1,0 +1,54 @@
+{
+  "generated_at": "2026-11-27T16:57:18+00:00",
+  "privacy": "aggregates only: no transcript text, clip names or speaker codes",
+  "tool": "scripts/score_folds.py",
+  "ids": {
+    "file": "report.txt",
+    "clips": 62,
+    "sha256_12": "f0aefd7fa302"
+  },
+  "incumbent": "c3-ftg7-breaks",
+  "incumbent_postprocessing": "sentence-breaks",
+  "bootstrap": {
+    "reps": 2000,
+    "seed": 20260908,
+    "level": 0.95
+  },
+  "results": [
+    {
+      "candidate": "c3-rover-order-s4",
+      "groups": {
+        "all": {
+          "clips": 62,
+          "reference_words": 1982,
+          "incumbent_wer": 0.0989,
+          "candidate_wer": 0.0858,
+          "difference": -0.0131,
+          "low": -0.0246,
+          "high": -0.002,
+          "interval": "BELOW ZERO"
+        },
+        "speaker_1": {
+          "clips": 30,
+          "reference_words": 1215,
+          "incumbent_wer": 0.1119,
+          "candidate_wer": 0.1012,
+          "difference": -0.0107,
+          "low": -0.0223,
+          "high": 0.0009,
+          "interval": "includes zero"
+        },
+        "speaker_2": {
+          "clips": 32,
+          "reference_words": 767,
+          "incumbent_wer": 0.0782,
+          "candidate_wer": 0.0613,
+          "difference": -0.0169,
+          "low": -0.0391,
+          "high": 0.0039,
+          "interval": "includes zero"
+        }
+      }
+    }
+  ]
+}
