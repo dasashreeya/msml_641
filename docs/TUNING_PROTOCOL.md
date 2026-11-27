@@ -210,3 +210,4 @@ report folds. Even the held-out number keeps some optimism from that, and the re
   C3 uses that run (decoded on the original machine, like the other systems it is combined
   with) and no new decode is made. The restriction to fold lists is done by the new
   `scripts/score_folds.py`.
+- **2026-11-27, extra full-dev decode.** A full-dev decode of the baseline was made anyway on the C2 laptop (`c3-ftg7-full`, 0.1059 vs 0.1077 for the original run). It is used only as a reproducibility check; C3 combines the original run, as planned.

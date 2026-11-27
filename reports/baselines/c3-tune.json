@@ -1,0 +1,154 @@
+{
+  "generated_at": "2026-11-27T16:56:03+00:00",
+  "privacy": "aggregates only: no transcript text, clip names or speaker codes",
+  "tool": "scripts/score_folds.py",
+  "ids": {
+    "file": "tune.txt",
+    "clips": 93,
+    "sha256_12": "95abc19bd673"
+  },
+  "incumbent": "c3-ftg7-breaks",
+  "incumbent_postprocessing": "sentence-breaks",
+  "bootstrap": {
+    "reps": 2000,
+    "seed": 20260908,
+    "level": 0.95
+  },
+  "results": [
+    {
+      "candidate": "c3-mbr-s3",
+      "groups": {
+        "all": {
+          "clips": 93,
+          "reference_words": 3012,
+          "incumbent_wer": 0.1046,
+          "candidate_wer": 0.1006,
+          "difference": -0.004,
+          "low": -0.0147,
+          "high": 0.0075,
+          "interval": "includes zero"
+        }
+      }
+    },
+    {
+      "candidate": "c3-rover-backbone-s3",
+      "groups": {
+        "all": {
+          "clips": 93,
+          "reference_words": 3012,
+          "incumbent_wer": 0.1046,
+          "candidate_wer": 0.1003,
+          "difference": -0.0043,
+          "low": -0.0148,
+          "high": 0.0065,
+          "interval": "includes zero"
+        }
+      }
+    },
+    {
+      "candidate": "c3-rover-order-s3",
+      "groups": {
+        "all": {
+          "clips": 93,
+          "reference_words": 3012,
+          "incumbent_wer": 0.1046,
+          "candidate_wer": 0.0983,
+          "difference": -0.0063,
+          "low": -0.0164,
+          "high": 0.0035,
+          "interval": "includes zero"
+        }
+      }
+    },
+    {
+      "candidate": "c3-mbr-s4",
+      "groups": {
+        "all": {
+          "clips": 93,
+          "reference_words": 3012,
+          "incumbent_wer": 0.1046,
+          "candidate_wer": 0.0996,
+          "difference": -0.005,
+          "low": -0.0205,
+          "high": 0.0104,
+          "interval": "includes zero"
+        }
+      }
+    },
+    {
+      "candidate": "c3-rover-backbone-s4",
+      "groups": {
+        "all": {
+          "clips": 93,
+          "reference_words": 3012,
+          "incumbent_wer": 0.1046,
+          "candidate_wer": 0.0976,
+          "difference": -0.007,
+          "low": -0.022,
+          "high": 0.0081,
+          "interval": "includes zero"
+        }
+      }
+    },
+    {
+      "candidate": "c3-rover-order-s4",
+      "groups": {
+        "all": {
+          "clips": 93,
+          "reference_words": 3012,
+          "incumbent_wer": 0.1046,
+          "candidate_wer": 0.0903,
+          "difference": -0.0143,
+          "low": -0.0264,
+          "high": -0.0033,
+          "interval": "BELOW ZERO"
+        }
+      }
+    },
+    {
+      "candidate": "c3-mbr-s5",
+      "groups": {
+        "all": {
+          "clips": 93,
+          "reference_words": 3012,
+          "incumbent_wer": 0.1046,
+          "candidate_wer": 0.0956,
+          "difference": -0.009,
+          "low": -0.0203,
+          "high": 0.0013,
+          "interval": "includes zero"
+        }
+      }
+    },
+    {
+      "candidate": "c3-rover-backbone-s5",
+      "groups": {
+        "all": {
+          "clips": 93,
+          "reference_words": 3012,
+          "incumbent_wer": 0.1046,
+          "candidate_wer": 0.0943,
+          "difference": -0.0103,
+          "low": -0.021,
+          "high": 0.0,
+          "interval": "includes zero"
+        }
+      }
+    },
+    {
+      "candidate": "c3-rover-order-s5",
+      "groups": {
+        "all": {
+          "clips": 93,
+          "reference_words": 3012,
+          "incumbent_wer": 0.1046,
+          "candidate_wer": 0.0946,
+          "difference": -0.01,
+          "low": -0.019,
+          "high": -0.0016,
+          "interval": "BELOW ZERO"
+        }
+      }
+    }
+  ]
+}
